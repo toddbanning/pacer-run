@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine, CartesianGrid, LabelList
+  ResponsiveContainer, ReferenceLine, CartesianGrid
 } from 'recharts';
 import { metersToMiles } from '../lib/strava';
 import { format, startOfWeek, addDays, subWeeks, isWithinInterval } from 'date-fns';

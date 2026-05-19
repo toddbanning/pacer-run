@@ -61,8 +61,6 @@ export default function WeekPlan({ plan, activities }) {
     ? Math.round((thisWeekActual / thisWeekPlanned) * 100)
     : null;
 
-  const isNav = (color) => color === 'var(--navy)';
-
   return (
     <div style={{
       background: 'var(--bg-card)',
