@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStravaData, useSheetsData } from '../hooks/useData';
+import { useAthlete } from '../hooks/useAthlete';
 import { clearTokens } from '../lib/strava';
 import HeaderStats from './HeaderStats';
 import WeeklyMileageChart from './WeeklyMileageChart';
@@ -31,23 +32,27 @@ function Skeleton({ height = 200 }) {
 export default function Dashboard({ onLogout }) {
   const { activities, loading: stravaLoading } = useStravaData(120);
   const { plan, races, shoes, settings, loading: sheetsLoading } = useSheetsData();
+  const { athlete } = useAthlete();
   const isLoading = stravaLoading || sheetsLoading;
 
   const handleLogout = () => { clearTokens(); onLogout(); };
 
+  const athleteName = athlete
+    ? `${athlete.firstname || ''} ${athlete.lastname || ''}`.trim()
+    : null;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
-      {/* Nav bar */}
       <HeaderStats
         activities={activities}
         plan={plan}
         races={races}
         settings={settings}
+        athleteName={athleteName}
         onLogout={handleLogout}
       />
 
-      {/* Main content */}
       <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* Row 1: Chart + Race */}
@@ -61,18 +66,20 @@ export default function Dashboard({ onLogout }) {
           {isLoading ? <Skeleton height={280} /> : <RaceCountdowns races={races} />}
         </div>
 
-        {/* Row 2: Rolling plan carousel */}
+        {/* Row 2: Training plan carousel */}
         <div style={{ marginBottom: '16px' }}>
           {isLoading ? <Skeleton height={148} /> : <WeekPlan plan={plan} activities={activities} />}
         </div>
 
-        {/* Row 3: Recent activities */}
-        <div style={{ marginBottom: '16px' }}>
-          {isLoading ? <Skeleton height={320} /> : <RecentActivities activities={activities} plan={plan} />}
+        {/* Row 3: Recent activities (2/3) + Shoe health (1/3) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '2fr 1fr',
+          gap: '16px',
+        }}>
+          {isLoading ? <Skeleton height={380} /> : <RecentActivities activities={activities} plan={plan} />}
+          {isLoading ? <Skeleton height={380} /> : <ShoeHealth shoes={shoes} activities={activities} />}
         </div>
-
-        {/* Row 4: Shoe fleet */}
-        {isLoading ? <Skeleton height={240} /> : <ShoeHealth shoes={shoes} activities={activities} />}
 
         {/* Footer */}
         <div style={{

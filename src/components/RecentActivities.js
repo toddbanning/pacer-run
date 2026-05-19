@@ -9,12 +9,13 @@ const TYPE_COLORS = {
   'Long Run':  '#B85C00',
   'Easy':      'var(--text-tertiary)',
   'Race':      'var(--mahogany)',
+  'VO2 Max':   '#C0392B',
 };
 
 function inferWorkoutType(name) {
   const n = (name || '').toLowerCase();
   if (n.includes('tempo')) return 'Tempo';
-  if (n.includes('long') || n.includes('lr')) return 'Long Run';
+  if (n.includes('long') || n.includes(' lr') || n.includes('lr ')) return 'Long Run';
   if (n.includes('800') || n.includes('400') || n.includes('200') || n.includes('speed')) return 'Speed';
   if (n.includes('threshold') || n.includes('1k') || n.includes('interval')) return 'Threshold';
   if (n.includes('vo2')) return 'VO2 Max';
@@ -37,13 +38,19 @@ function ActivityRow({ activity, planEntry, isLast }) {
       display: 'grid',
       gridTemplateColumns: '1fr auto',
       alignItems: 'center',
-      gap: '12px',
-      padding: '11px 0',
+      gap: '16px',
+      padding: '9px 0',
       borderBottom: isLast ? 'none' : '1px solid var(--border-light)',
     }}>
-      {/* Left: name + meta */}
+      {/* Left: everything about the run */}
       <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+        {/* Single line: title + type badge */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '3px',
+        }}>
           <span style={{
             fontSize: '13px',
             color: 'var(--text-primary)',
@@ -62,24 +69,51 @@ function ActivityRow({ activity, planEntry, isLast }) {
             borderRadius: '3px',
             padding: '1px 5px',
             flexShrink: 0,
+            whiteSpace: 'nowrap',
           }}>
             {type}
           </span>
         </div>
-        {/* Stats row */}
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--mahogany)', fontWeight: 500 }}>
+
+        {/* Single line: all metrics inline */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0',
+          flexWrap: 'nowrap',
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
+            color: 'var(--mahogany)',
+            fontWeight: 500,
+            marginRight: '12px',
+          }}>
             {miles} mi
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
+            color: 'var(--text-secondary)',
+            marginRight: '12px',
+          }}>
             {pace}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>/mi</span>
           </span>
           {activity.average_heartrate && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              color: 'var(--text-secondary)',
+              marginRight: '12px',
+            }}>
               {Math.round(activity.average_heartrate)}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}> bpm</span>
             </span>
           )}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
+            color: 'var(--text-tertiary)',
+          }}>
             {formatDuration(activity.moving_time)}
           </span>
           {diff !== null && (
@@ -87,16 +121,23 @@ function ActivityRow({ activity, planEntry, isLast }) {
               fontFamily: 'var(--font-mono)',
               fontSize: '11px',
               color: diff >= 0 ? '#2D7A4F' : '#B85C00',
+              marginLeft: '10px',
             }}>
-              {diff >= 0 ? '+' : ''}{diff} vs plan
+              {diff >= 0 ? '+' : ''}{diff}
             </span>
           )}
         </div>
       </div>
 
       {/* Right: date + shoe */}
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', marginBottom: '3px' }}>
+      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '110px' }}>
+        <div style={{
+          fontSize: '11px',
+          color: 'var(--text-tertiary)',
+          fontFamily: 'var(--font-mono)',
+          marginBottom: '4px',
+          whiteSpace: 'nowrap',
+        }}>
           {date}
         </div>
         {gearName && (
@@ -108,7 +149,7 @@ function ActivityRow({ activity, planEntry, isLast }) {
             padding: '2px 6px',
             fontFamily: 'var(--font-mono)',
             display: 'inline-block',
-            maxWidth: '120px',
+            maxWidth: '130px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -133,6 +174,7 @@ export default function RecentActivities({ activities, plan }) {
       borderRadius: 'var(--radius-lg)',
       padding: '20px 24px',
       boxShadow: 'var(--shadow)',
+      height: '100%',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--navy)' }}>Recent Activities</div>
