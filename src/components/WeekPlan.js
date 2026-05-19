@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { metersToMiles } from '../lib/strava';
-import { parseISO, format, isToday, addDays, subDays } from 'date-fns';
+import { format, isToday, addDays, subDays } from 'date-fns';
 
 const TYPE_COLORS = {
   'Speed':     '#C0392B',
