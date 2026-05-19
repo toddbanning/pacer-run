@@ -16,7 +16,7 @@ async function fetchSheet(spreadsheetId, range) {
 export async function fetchTrainingPlan() {
   const rows = await fetchSheet(TRAINING_PLAN_ID, 'A:G');
   if (rows.length < 2) return [];
-  const [header, ...data] = rows;
+  const [, ...data] = rows;
   return data.map(row => ({
     date: row[0] || '',
     day: row[1] || '',
