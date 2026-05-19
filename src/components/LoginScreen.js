@@ -16,24 +16,26 @@ export default function LoginScreen() {
         <div style={{
           fontFamily: 'var(--font-mono)',
           fontSize: '11px',
-          letterSpacing: '0.2em',
-          color: 'var(--accent)',
+          letterSpacing: '0.25em',
+          color: 'var(--navy)',
           textTransform: 'uppercase',
-          marginBottom: '12px',
+          marginBottom: '16px',
+          fontWeight: 500,
         }}>
           Pacer
         </div>
         <h1 style={{
-          fontSize: '32px',
+          fontSize: '36px',
           fontWeight: 300,
           color: 'var(--text-primary)',
           letterSpacing: '-0.02em',
-          marginBottom: '8px',
+          marginBottom: '10px',
+          lineHeight: 1.2,
         }}>
           Your marathon training,<br />at a glance.
         </h1>
         <p style={{
-          color: 'var(--text-secondary)',
+          color: 'var(--text-tertiary)',
           fontSize: '14px',
           fontWeight: 300,
         }}>
@@ -47,16 +49,17 @@ export default function LoginScreen() {
           display: 'inline-flex',
           alignItems: 'center',
           gap: '10px',
-          background: 'var(--accent)',
-          color: '#0c0c0b',
-          padding: '12px 24px',
+          background: 'var(--navy)',
+          color: '#FFFFFF',
+          padding: '12px 28px',
           borderRadius: 'var(--radius)',
           fontWeight: 500,
           fontSize: '14px',
-          transition: 'opacity 0.15s',
+          transition: 'background 0.15s',
+          letterSpacing: '0.01em',
         }}
-        onMouseEnter={e => e.target.style.opacity = '0.85'}
-        onMouseLeave={e => e.target.style.opacity = '1'}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--navy-light)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'var(--navy)'}
       >
         Connect with Strava
       </a>

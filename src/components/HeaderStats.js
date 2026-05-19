@@ -7,12 +7,10 @@ export default function HeaderStats({ activities, plan, races, settings, onLogou
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
-  // This week actual miles
   const thisWeekActual = activities
     .filter(a => isWithinInterval(new Date(a.start_date), { start: weekStart, end: weekEnd }))
     .reduce((s, a) => s + metersToMiles(a.distance), 0);
 
-  // This week planned miles
   const thisWeekPlanned = plan
     .filter(p => {
       try { return isWithinInterval(parseISO(p.date), { start: weekStart, end: weekEnd }); }
@@ -20,102 +18,131 @@ export default function HeaderStats({ activities, plan, races, settings, onLogou
     })
     .reduce((s, p) => s + p.plannedMiles, 0);
 
-  // Next race
   const nextRace = races
     .filter(r => r.status !== 'Completed' && new Date(r.date) > now)
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   const daysToRace = nextRace ? differenceInDays(new Date(nextRace.date), now) : null;
 
-  // 4-week rolling avg
   const fourWeeksAgo = new Date(now - 28 * 86400 * 1000);
   const recentMiles = activities
     .filter(a => new Date(a.start_date) > fourWeeksAgo)
     .reduce((s, a) => s + metersToMiles(a.distance), 0);
   const avgWeeklyMiles = Math.round(recentMiles / 4 * 10) / 10;
 
-  const stats = [
-    {
-      label: 'This Week',
-      value: `${Math.round(thisWeekActual * 10) / 10} mi`,
-      sub: thisWeekPlanned ? `of ${Math.round(thisWeekPlanned * 10) / 10} planned` : 'no plan loaded',
-      accent: thisWeekActual >= thisWeekPlanned && thisWeekPlanned > 0,
-    },
-    {
-      label: '4-Week Avg',
-      value: `${avgWeeklyMiles} mi/wk`,
-      sub: 'rolling average',
-    },
-    {
-      label: 'Training Phase',
-      value: settings.training_phase || '—',
-      sub: 'current block',
-    },
-    ...(daysToRace !== null ? [{
-      label: nextRace.name,
-      value: `${daysToRace}d`,
-      sub: nextRace.goalTime ? `Goal: ${nextRace.goalTime}` : 'upcoming',
-      accent: daysToRace <= 42,
-    }] : []),
-  ];
+  const pctComplete = thisWeekPlanned > 0
+    ? Math.min(Math.round((thisWeekActual / thisWeekPlanned) * 100), 100)
+    : null;
 
   return (
     <div style={{
+      background: 'var(--navy)',
+      padding: '16px 28px',
       display: 'flex',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      padding: '0 0 20px 0',
-      borderBottom: '1px solid var(--border)',
-      marginBottom: '24px',
+      justifyContent: 'space-between',
       flexWrap: 'wrap',
       gap: '16px',
     }}>
       {/* Logo */}
       <div style={{
         fontFamily: 'var(--font-mono)',
-        fontSize: '13px',
-        letterSpacing: '0.15em',
-        color: 'var(--accent)',
+        fontSize: '12px',
+        letterSpacing: '0.25em',
+        color: 'var(--white)',
         textTransform: 'uppercase',
         fontWeight: 500,
+        opacity: 0.9,
       }}>
         Pacer
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-        {stats.map((s, i) => (
-          <div key={i} style={{ textAlign: 'center' }}>
+      <div style={{ display: 'flex', gap: '40px', flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* This week */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: '22px',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 300,
+            color: 'var(--white)',
+            lineHeight: 1,
+          }}>
+            <span style={{ color: '#E8B4BB' }}>{Math.round(thisWeekActual * 10) / 10}</span>
+            {thisWeekPlanned > 0 && (
+              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', marginLeft: '4px' }}>
+                / {Math.round(thisWeekPlanned * 10) / 10}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-mono)', marginTop: '3px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            This Week {pctComplete !== null ? `· ${pctComplete}%` : ''}
+          </div>
+        </div>
+
+        {/* 4-week avg */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: '22px',
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 300,
+            color: 'var(--white)',
+            lineHeight: 1,
+          }}>
+            {avgWeeklyMiles}
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-mono)', marginTop: '3px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            mi / wk avg
+          </div>
+        </div>
+
+        {/* Phase */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: '14px',
+            fontFamily: 'var(--font-sans)',
+            fontWeight: 400,
+            color: 'var(--white)',
+            lineHeight: 1,
+          }}>
+            {settings.training_phase || '—'}
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-mono)', marginTop: '3px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Phase
+          </div>
+        </div>
+
+        {/* Next race countdown */}
+        {daysToRace !== null && (
+          <div style={{ textAlign: 'center' }}>
             <div style={{
-              fontSize: '18px',
+              fontSize: '22px',
               fontFamily: 'var(--font-mono)',
               fontWeight: 300,
-              color: s.accent ? 'var(--accent)' : 'var(--text-primary)',
-              lineHeight: 1.2,
+              color: '#E8B4BB',
+              lineHeight: 1,
             }}>
-              {s.value}
+              {daysToRace}d
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-              {s.label}
-            </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-              {s.sub}
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-mono)', marginTop: '3px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {nextRace.name}
             </div>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Logout */}
+      {/* Disconnect */}
       <button
         onClick={onLogout}
         style={{
           fontSize: '11px',
-          color: 'var(--text-tertiary)',
+          color: 'rgba(255,255,255,0.35)',
           background: 'transparent',
-          border: '1px solid var(--border)',
+          border: '1px solid rgba(255,255,255,0.15)',
           borderRadius: 'var(--radius)',
-          padding: '5px 10px',
+          padding: '5px 12px',
           fontFamily: 'var(--font-mono)',
+          letterSpacing: '0.05em',
         }}
       >
         disconnect

@@ -2,14 +2,13 @@ import React from 'react';
 import { metersToMiles, secondsToPace, formatDuration } from '../lib/strava';
 import { format, parseISO } from 'date-fns';
 
-const WORKOUT_TYPE_COLORS = {
-  'Speed':         'var(--red)',
-  'Tempo':         '#b06bff',
-  'Threshold':     'var(--green)',
-  'Long Run':      'var(--orange)',
-  'VO2 Max':       'var(--red)',
-  'Easy':          'var(--text-tertiary)',
-  'Race Sharpener':'var(--accent)',
+const TYPE_COLORS = {
+  'Speed':     '#C0392B',
+  'Tempo':     '#6B3FA0',
+  'Threshold': '#1A6B45',
+  'Long Run':  '#B85C00',
+  'Easy':      'var(--text-tertiary)',
+  'Race':      'var(--mahogany)',
 };
 
 function inferWorkoutType(name) {
@@ -18,37 +17,43 @@ function inferWorkoutType(name) {
   if (n.includes('long') || n.includes('lr')) return 'Long Run';
   if (n.includes('800') || n.includes('400') || n.includes('200') || n.includes('speed')) return 'Speed';
   if (n.includes('threshold') || n.includes('1k') || n.includes('interval')) return 'Threshold';
-  if (n.includes('vo2') || n.includes('vo₂')) return 'VO2 Max';
+  if (n.includes('vo2')) return 'VO2 Max';
   if (n.includes('race') || n.includes('marathon') || n.includes('half')) return 'Race';
   return 'Easy';
 }
 
-function ActivityRow({ activity, planEntry }) {
+function ActivityRow({ activity, planEntry, isLast }) {
   const miles = metersToMiles(activity.distance);
   const pace = secondsToPace(activity.moving_time, activity.distance);
   const date = format(parseISO(activity.start_date), 'EEE MMM d');
   const type = inferWorkoutType(activity.name);
-  const typeColor = WORKOUT_TYPE_COLORS[type] || 'var(--text-tertiary)';
+  const typeColor = TYPE_COLORS[type] || 'var(--text-tertiary)';
   const plannedMiles = planEntry?.plannedMiles || 0;
   const diff = plannedMiles ? Math.round((miles - plannedMiles) * 10) / 10 : null;
+  const gearName = activity.gear?.name || '';
 
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '90px 1fr auto auto auto',
+      gridTemplateColumns: '1fr auto',
       alignItems: 'center',
       gap: '12px',
-      padding: '10px 0',
-      borderBottom: '1px solid var(--border)',
+      padding: '11px 0',
+      borderBottom: isLast ? 'none' : '1px solid var(--border-light)',
     }}>
-      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-        {date}
-      </div>
-      <div>
-        <div style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '2px' }}>
-          {activity.name}
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      {/* Left: name + meta */}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+          <span style={{
+            fontSize: '13px',
+            color: 'var(--text-primary)',
+            fontWeight: 400,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {activity.name}
+          </span>
           <span style={{
             fontSize: '10px',
             color: typeColor,
@@ -56,49 +61,61 @@ function ActivityRow({ activity, planEntry }) {
             border: `1px solid ${typeColor}33`,
             borderRadius: '3px',
             padding: '1px 5px',
+            flexShrink: 0,
           }}>
             {type}
           </span>
-          {activity.gear_id && (
-            <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>
-              {activity.gear?.name || ''}
+        </div>
+        {/* Stats row */}
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--mahogany)', fontWeight: 500 }}>
+            {miles} mi
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+            {pace}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>/mi</span>
+          </span>
+          {activity.average_heartrate && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              {Math.round(activity.average_heartrate)}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}> bpm</span>
+            </span>
+          )}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+            {formatDuration(activity.moving_time)}
+          </span>
+          {diff !== null && (
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: diff >= 0 ? '#2D7A4F' : '#B85C00',
+            }}>
+              {diff >= 0 ? '+' : ''}{diff} vs plan
             </span>
           )}
         </div>
       </div>
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ fontSize: '13px', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-          {miles} mi
+
+      {/* Right: date + shoe */}
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', marginBottom: '3px' }}>
+          {date}
         </div>
-        {diff !== null && (
+        {gearName && (
           <div style={{
             fontSize: '10px',
+            color: 'var(--navy)',
+            background: 'var(--navy-subtle)',
+            borderRadius: '3px',
+            padding: '2px 6px',
             fontFamily: 'var(--font-mono)',
-            color: diff >= 0 ? 'var(--green)' : 'var(--orange)',
+            display: 'inline-block',
+            maxWidth: '120px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}>
-            {diff >= 0 ? '+' : ''}{diff} vs plan
+            {gearName}
           </div>
         )}
-      </div>
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ fontSize: '13px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-          {pace}
-        </div>
-        <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-          /mi
-        </div>
-      </div>
-      <div style={{ textAlign: 'right' }}>
-        {activity.average_heartrate ? (
-          <div style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-            {Math.round(activity.average_heartrate)} bpm
-          </div>
-        ) : (
-          <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>—</div>
-        )}
-        <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-          {formatDuration(activity.moving_time)}
-        </div>
       </div>
     </div>
   );
@@ -109,62 +126,37 @@ export default function RecentActivities({ activities, plan }) {
     .sort((a, b) => new Date(b.start_date) - new Date(a.start_date))
     .slice(0, 10);
 
-  if (!recent.length) {
-    return (
-      <div style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '20px',
-      }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>Recent Activities</div>
-        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No recent activities found.</p>
-      </div>
-    );
-  }
-
   return (
     <div style={{
       background: 'var(--bg-card)',
       border: '1px solid var(--border)',
       borderRadius: 'var(--radius-lg)',
-      padding: '20px',
+      padding: '20px 24px',
+      boxShadow: 'var(--shadow)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 500 }}>Recent Activities</div>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--navy)' }}>Recent Activities</div>
         <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
           last {recent.length} runs
         </div>
       </div>
 
-      {/* Header */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '90px 1fr auto auto auto',
-        gap: '12px',
-        padding: '8px 0',
-        borderBottom: '1px solid var(--border-light)',
-        marginBottom: '2px',
-      }}>
-        {['Date', 'Activity', 'Miles', 'Pace', 'HR / Time'].map(h => (
-          <div key={h} style={{
-            fontSize: '10px',
-            color: 'var(--text-tertiary)',
-            fontFamily: 'var(--font-mono)',
-            textAlign: h === 'Date' || h === 'Activity' ? 'left' : 'right',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}>
-            {h}
-          </div>
-        ))}
-      </div>
-
-      {recent.map(activity => {
-        const actDate = activity.start_date?.split('T')[0];
-        const planEntry = plan.find(p => p.date === actDate);
-        return <ActivityRow key={activity.id} activity={activity} planEntry={planEntry} />;
-      })}
+      {recent.length === 0 ? (
+        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '12px' }}>No recent activities found.</p>
+      ) : (
+        recent.map((activity, i) => {
+          const actDate = activity.start_date?.split('T')[0];
+          const planEntry = plan.find(p => p.date === actDate);
+          return (
+            <ActivityRow
+              key={activity.id}
+              activity={activity}
+              planEntry={planEntry}
+              isLast={i === recent.length - 1}
+            />
+          );
+        })
+      )}
     </div>
   );
 }

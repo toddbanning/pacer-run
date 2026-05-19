@@ -8,87 +8,78 @@ function RaceCard({ race }) {
   const weeksOut = differenceInWeeks(raceDate, today);
   const isPast = daysOut < 0;
 
-  const urgencyColor = daysOut <= 14 ? 'var(--red)' :
-    daysOut <= 42 ? 'var(--orange)' : 'var(--accent)';
-
   return (
     <div style={{
-      background: 'var(--bg-subtle)',
+      background: isPast ? 'var(--bg-subtle)' : 'var(--bg-card)',
       border: '1px solid var(--border)',
       borderRadius: 'var(--radius)',
-      padding: '16px',
-      borderLeft: `3px solid ${isPast ? 'var(--text-tertiary)' : urgencyColor}`,
+      padding: '14px 16px',
+      borderLeft: `3px solid ${isPast ? 'var(--border)' : 'var(--mahogany)'}`,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-        <div>
-          <div style={{ fontSize: '13px', fontWeight: 500, color: isPast ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: isPast ? 'var(--text-tertiary)' : 'var(--text-primary)', marginBottom: '2px' }}>
             {race.name}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
             {race.date} · {race.distance}mi
           </div>
         </div>
         {!isPast && (
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: 'right', marginLeft: '16px', flexShrink: 0 }}>
             <div style={{
-              fontSize: '24px',
-              fontWeight: 300,
+              fontSize: '28px',
               fontFamily: 'var(--font-mono)',
-              color: urgencyColor,
+              fontWeight: 300,
+              color: 'var(--mahogany)',
               lineHeight: 1,
             }}>
               {daysOut}
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', marginTop: '1px' }}>
               days · {weeksOut}wk
             </div>
           </div>
         )}
         {isPast && race.result && (
-          <div style={{
-            fontSize: '16px',
-            fontFamily: 'var(--font-mono)',
-            color: 'var(--text-secondary)',
-          }}>
+          <div style={{ fontSize: '16px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', marginLeft: '12px' }}>
             {race.result}
           </div>
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        {race.goalTime && (
-          <div style={{
-            fontSize: '11px',
-            fontFamily: 'var(--font-mono)',
-            color: urgencyColor,
-            background: 'rgba(232,255,107,0.06)',
-            border: '1px solid var(--border)',
-            borderRadius: '4px',
-            padding: '3px 8px',
-          }}>
-            Goal: {race.goalTime}
-          </div>
-        )}
-        {race.goalType && (
-          <div style={{
-            fontSize: '11px',
-            color: 'var(--text-tertiary)',
-            border: '1px solid var(--border)',
-            borderRadius: '4px',
-            padding: '3px 8px',
-          }}>
-            {race.goalType}
-          </div>
-        )}
-      </div>
+      {(race.goalTime || race.goalType) && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+          {race.goalTime && (
+            <div style={{
+              fontSize: '11px',
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--mahogany)',
+              background: 'var(--mahogany-subtle)',
+              border: '1px solid var(--mahogany-light)',
+              borderRadius: '4px',
+              padding: '3px 8px',
+            }}>
+              {race.goalTime}
+            </div>
+          )}
+          {race.goalType && (
+            <div style={{
+              fontSize: '11px',
+              color: 'var(--text-tertiary)',
+              border: '1px solid var(--border)',
+              borderRadius: '4px',
+              padding: '3px 8px',
+              fontFamily: 'var(--font-mono)',
+            }}>
+              {race.goalType}
+            </div>
+          )}
+        </div>
+      )}
 
       {race.courseNotes && (
-        <div style={{
-          fontSize: '11px',
-          color: 'var(--text-tertiary)',
-          marginTop: '8px',
-          fontStyle: 'italic',
-        }}>
+        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '8px', fontStyle: 'italic' }}>
           {race.courseNotes}
         </div>
       )}
@@ -101,31 +92,22 @@ export default function RaceCountdowns({ races }) {
     .filter(r => r.status !== 'Completed')
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  if (!upcoming.length) {
-    return (
-      <div style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '20px',
-      }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '12px' }}>Upcoming Races</div>
-        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No upcoming races scheduled.</p>
-      </div>
-    );
-  }
-
   return (
     <div style={{
       background: 'var(--bg-card)',
       border: '1px solid var(--border)',
       borderRadius: 'var(--radius-lg)',
-      padding: '20px',
+      padding: '20px 24px',
+      boxShadow: 'var(--shadow)',
     }}>
-      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '16px' }}>Upcoming Races</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {upcoming.map((race, i) => <RaceCard key={i} race={race} />)}
-      </div>
+      <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--navy)', marginBottom: '14px' }}>Upcoming Races</div>
+      {upcoming.length === 0 ? (
+        <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No upcoming races scheduled.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {upcoming.map((race, i) => <RaceCard key={i} race={race} />)}
+        </div>
+      )}
     </div>
   );
 }
