@@ -1,6 +1,6 @@
-// hooks/useStravaData.js
 import { useState, useEffect, useCallback } from 'react';
 import { fetchAllActivitiesSince, getTokens } from '../lib/strava';
+import { fetchTrainingPlan, fetchRaces, fetchShoes, fetchSettings } from '../lib/sheets';
 
 export function useStravaData(daysBack = 120) {
   const [activities, setActivities] = useState([]);
@@ -28,10 +28,6 @@ export function useStravaData(daysBack = 120) {
 
   return { activities, loading, error, refetch: load };
 }
-
-// hooks/useSheetsData.js
-import { useState, useEffect } from 'react';
-import { fetchTrainingPlan, fetchRaces, fetchShoes, fetchSettings } from '../lib/sheets';
 
 export function useSheetsData() {
   const [plan, setPlan] = useState([]);
