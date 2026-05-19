@@ -1,23 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { metersToMiles } from '../lib/strava';
-import { format, isToday, addDays, subDays, isFuture, isPast } from 'date-fns';
+import { format, isToday, addDays, subDays, isFuture, isPast, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 
 const TYPE_COLORS = {
   'Speed':     '#C0392B',
   'Tempo':     '#6B3FA0',
   'Threshold': '#1A6B45',
   'Long Run':  '#B85C00',
-  'Easy':      'var(--text-tertiary)',
-  'Off':       'var(--border)',
-};
-
-const TYPE_BG = {
-  'Speed':     'rgba(192,57,43,0.08)',
-  'Tempo':     'rgba(107,63,160,0.08)',
-  'Threshold': 'rgba(26,107,69,0.08)',
-  'Long Run':  'rgba(184,92,0,0.08)',
-  'Easy':      'rgba(0,0,0,0.03)',
-  'Off':       'transparent',
+  'Easy':      '#888480',
+  'Off':       '#CCCCCC',
 };
 
 export default function WeekPlan({ plan, activities }) {
@@ -25,7 +16,6 @@ export default function WeekPlan({ plan, activities }) {
   const todayRef = useRef(null);
   const now = new Date();
 
-  // 14-day window: 6 back, today, 7 forward
   const days = [];
   for (let i = -6; i <= 7; i++) {
     const date = i < 0 ? subDays(now, Math.abs(i)) : addDays(now, i);
@@ -34,14 +24,12 @@ export default function WeekPlan({ plan, activities }) {
     const actMiles = activities
       .filter(a => a.start_date?.startsWith(dateStr))
       .reduce((s, a) => s + metersToMiles(a.distance), 0);
-    const roundedActual = Math.round(actMiles * 10) / 10;
     days.push({
-      date,
-      dateStr,
+      date, dateStr,
       dayLabel: format(date, 'EEE'),
       dateLabel: format(date, 'MMM d'),
       planEntry,
-      actMiles: roundedActual,
+      actMiles: Math.round(actMiles * 10) / 10,
       isToday: isToday(date),
       isPast: isPast(date) && !isToday(date),
       isFuture: isFuture(date),
@@ -51,18 +39,29 @@ export default function WeekPlan({ plan, activities }) {
   useEffect(() => {
     if (todayRef.current && scrollRef.current) {
       const container = scrollRef.current;
-      const todayEl = todayRef.current;
-      const offset = todayEl.offsetLeft - container.offsetWidth / 2 + todayEl.offsetWidth / 2;
-      container.scrollLeft = offset;
+      const el = todayRef.current;
+      container.scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2;
     }
   }, []);
 
-  const thisWeekActual = days
-    .filter(d => !d.isFuture)
-    .reduce((s, d) => s + d.actMiles, 0);
-  const thisWeekPlanned = days
-    .filter(d => d.planEntry)
-    .reduce((s, d) => s + (d.planEntry?.plannedMiles || 0), 0);
+  // This week plan vs actual
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const thisWeekActual = activities
+    .filter(a => isWithinInterval(new Date(a.start_date), { start: weekStart, end: weekEnd }))
+    .reduce((s, a) => s + metersToMiles(a.distance), 0);
+  const thisWeekPlanned = plan
+    .filter(p => {
+      try { return isWithinInterval(new Date(p.date), { start: weekStart, end: weekEnd }); }
+      catch { return false; }
+    })
+    .reduce((s, p) => s + p.plannedMiles, 0);
+
+  const pct = thisWeekPlanned > 0
+    ? Math.round((thisWeekActual / thisWeekPlanned) * 100)
+    : null;
+
+  const isNav = (color) => color === 'var(--navy)';
 
   return (
     <div style={{
@@ -74,11 +73,12 @@ export default function WeekPlan({ plan, activities }) {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--navy)' }}>Training Plan</div>
-        <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
-          <span style={{ color: 'var(--mahogany)', fontWeight: 500 }}>{Math.round(thisWeekActual * 10) / 10}</span>
-          {' / '}
-          {Math.round(thisWeekPlanned * 10) / 10} mi this week
-        </div>
+        {pct !== null && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+            <span style={{ color: 'var(--mahogany)', fontWeight: 500, fontSize: '13px' }}>{pct}%</span>
+            {' '}of planned this week
+          </div>
+        )}
       </div>
 
       <div
@@ -94,11 +94,14 @@ export default function WeekPlan({ plan, activities }) {
       >
         {days.map((day, i) => {
           const type = day.planEntry?.workoutType || 'Off';
-          const typeColor = TYPE_COLORS[type] || 'var(--text-tertiary)';
-          const typeBg = TYPE_BG[type] || 'transparent';
-          const hasPlan = !!day.planEntry;
+          const typeColor = TYPE_COLORS[type] || '#888480';
           const hasActual = day.actMiles > 0;
-          const missed = day.isPast && !hasActual && hasPlan && day.planEntry?.plannedMiles > 0;
+          const hasPlan = !!day.planEntry && day.planEntry.plannedMiles > 0;
+          const dark = day.isToday;
+
+          const sectionBorder = dark
+            ? '1px solid rgba(255,255,255,0.1)'
+            : '1px solid var(--border-light)';
 
           return (
             <div
@@ -106,24 +109,23 @@ export default function WeekPlan({ plan, activities }) {
               ref={day.isToday ? todayRef : null}
               style={{
                 flexShrink: 0,
-                width: '86px',
+                width: '90px',
                 borderRadius: 'var(--radius)',
-                border: '1px solid',
-                borderColor: day.isToday ? 'var(--navy)' : 'var(--border)',
-                background: day.isToday ? 'var(--navy)' : 'var(--bg-card)',
+                border: `1px solid ${dark ? 'var(--navy)' : 'var(--border)'}`,
+                background: dark ? 'var(--navy)' : 'var(--bg-card)',
                 overflow: 'hidden',
-                opacity: missed ? 0.4 : 1,
+                opacity: (day.isPast && !hasActual && hasPlan) ? 0.4 : 1,
               }}
             >
-              {/* Date header section */}
+              {/* TOP: Day + Date */}
               <div style={{
-                padding: '8px 10px 6px',
-                borderBottom: `1px solid ${day.isToday ? 'rgba(255,255,255,0.1)' : 'var(--border-light)'}`,
+                padding: '7px 10px',
+                borderBottom: sectionBorder,
               }}>
                 <div style={{
                   fontSize: '10px',
                   fontFamily: 'var(--font-mono)',
-                  color: day.isToday ? 'rgba(255,255,255,0.5)' : 'var(--text-tertiary)',
+                  color: dark ? 'rgba(255,255,255,0.45)' : 'var(--text-tertiary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
                 }}>
@@ -132,90 +134,86 @@ export default function WeekPlan({ plan, activities }) {
                 <div style={{
                   fontSize: '12px',
                   fontFamily: 'var(--font-mono)',
-                  color: day.isToday ? 'rgba(255,255,255,0.9)' : 'var(--text-primary)',
                   fontWeight: 500,
+                  color: dark ? 'rgba(255,255,255,0.9)' : 'var(--text-primary)',
                   marginTop: '1px',
                 }}>
                   {day.dateLabel}
                 </div>
               </div>
 
-              {/* Miles section */}
-              <div style={{ padding: '8px 10px 10px' }}>
-                {/* Workout type badge */}
-                {hasPlan && type !== 'Off' && (
-                  <div style={{
-                    fontSize: '9px',
-                    fontFamily: 'var(--font-mono)',
-                    color: day.isToday ? 'rgba(255,255,255,0.7)' : typeColor,
-                    background: day.isToday ? 'rgba(255,255,255,0.1)' : typeBg,
-                    borderRadius: '3px',
-                    padding: '2px 5px',
-                    marginBottom: '6px',
-                    display: 'inline-block',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}>
-                    {type}
-                  </div>
-                )}
-
-                {/* Actual miles — past/today */}
-                {hasActual && (
-                  <div style={{ marginBottom: hasPlan ? '4px' : 0 }}>
+              {/* MIDDLE: Planned miles + workout type */}
+              <div style={{
+                padding: '7px 10px',
+                borderBottom: sectionBorder,
+                minHeight: '52px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}>
+                {hasPlan ? (
+                  <>
                     <div style={{
-                      fontSize: '18px',
+                      fontSize: '16px',
                       fontFamily: 'var(--font-mono)',
-                      fontWeight: 300,
-                      color: day.isToday ? '#E8B4BB' : 'var(--mahogany)',
-                      lineHeight: 1,
-                    }}>
-                      {day.actMiles}
-                    </div>
-                    <div style={{
-                      fontSize: '9px',
-                      color: day.isToday ? 'rgba(255,255,255,0.35)' : 'var(--text-tertiary)',
-                      fontFamily: 'var(--font-mono)',
-                      marginTop: '1px',
-                    }}>
-                      actual
-                    </div>
-                  </div>
-                )}
-
-                {/* Planned miles — always show if plan exists */}
-                {hasPlan && day.planEntry.plannedMiles > 0 && (
-                  <div style={{ marginTop: hasActual ? '4px' : 0 }}>
-                    <div style={{
-                      fontSize: hasActual ? '12px' : '18px',
-                      fontFamily: 'var(--font-mono)',
-                      fontWeight: 300,
-                      color: hasActual
-                        ? (day.isToday ? 'rgba(255,255,255,0.35)' : 'var(--text-tertiary)')
-                        : (day.isToday ? 'rgba(255,255,255,0.9)' : 'var(--text-primary)'),
+                      fontWeight: 400,
+                      color: dark ? 'rgba(255,255,255,0.85)' : 'var(--text-primary)',
                       lineHeight: 1,
                     }}>
                       {day.planEntry.plannedMiles}
+                      <span style={{ fontSize: '10px', color: dark ? 'rgba(255,255,255,0.35)' : 'var(--text-tertiary)', marginLeft: '2px' }}>mi</span>
+                    </div>
+                    {type !== 'Off' && (
+                      <div style={{
+                        fontSize: '10px',
+                        fontFamily: 'var(--font-mono)',
+                        color: dark ? 'rgba(255,255,255,0.6)' : typeColor,
+                        marginTop: '3px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                      }}>
+                        {type}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ fontSize: '12px', color: dark ? 'rgba(255,255,255,0.2)' : 'var(--border)', fontFamily: 'var(--font-mono)' }}>—</div>
+                )}
+              </div>
+
+              {/* BOTTOM: Actual miles */}
+              <div style={{
+                padding: '7px 10px',
+                minHeight: '44px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}>
+                {hasActual ? (
+                  <>
+                    <div style={{
+                      fontSize: '16px',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 400,
+                      color: dark ? '#E8B4BB' : 'var(--mahogany)',
+                      lineHeight: 1,
+                    }}>
+                      {day.actMiles}
+                      <span style={{ fontSize: '10px', color: dark ? 'rgba(255,255,255,0.35)' : 'var(--text-tertiary)', marginLeft: '2px' }}>mi</span>
                     </div>
                     <div style={{
                       fontSize: '9px',
-                      color: day.isToday ? 'rgba(255,255,255,0.3)' : 'var(--text-tertiary)',
                       fontFamily: 'var(--font-mono)',
-                      marginTop: '1px',
+                      color: dark ? 'rgba(255,255,255,0.3)' : 'var(--text-tertiary)',
+                      marginTop: '2px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
                     }}>
-                      planned
+                      actual
                     </div>
-                  </div>
-                )}
-
-                {/* No plan, no actual */}
-                {!hasPlan && !hasActual && (
-                  <div style={{
-                    fontSize: '14px',
-                    color: day.isToday ? 'rgba(255,255,255,0.2)' : 'var(--border)',
-                    fontFamily: 'var(--font-mono)',
-                    marginTop: '4px',
-                  }}>—</div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '11px', color: dark ? 'rgba(255,255,255,0.2)' : 'var(--border)', fontFamily: 'var(--font-mono)' }}>—</div>
                 )}
               </div>
             </div>

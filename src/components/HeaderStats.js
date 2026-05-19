@@ -1,6 +1,6 @@
 import React from 'react';
 import { metersToMiles } from '../lib/strava';
-import { startOfWeek, endOfWeek, isWithinInterval, parseISO, differenceInDays, subWeeks, addDays } from 'date-fns';
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO, subWeeks, addDays } from 'date-fns';
 
 export default function HeaderStats({ activities, plan, races, settings, athleteName, onLogout }) {
   const now = new Date();
@@ -29,42 +29,34 @@ export default function HeaderStats({ activities, plan, races, settings, athlete
     })
     .reduce((s, p) => s + p.plannedMiles, 0);
 
-  // Next race
-  const nextRace = races
-    .filter(r => r.status !== 'Completed' && new Date(r.date) > now)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
-  const daysToRace = nextRace ? differenceInDays(new Date(nextRace.date), now) : null;
-
-  const stats = [
-    {
-      value: Math.round(thisWeekActual * 10) / 10,
-      unit: 'mi',
-      label: 'This Week',
-      highlight: true,
-    },
-    {
-      value: Math.round(lastWeekActual * 10) / 10,
-      unit: 'mi',
-      label: 'Last Week',
-    },
-    {
-      value: nextWeekPlanned > 0 ? Math.round(nextWeekPlanned * 10) / 10 : '—',
-      unit: nextWeekPlanned > 0 ? 'mi' : '',
-      label: 'Planned Next Week',
-    },
-    {
-      value: settings.training_phase || '—',
-      unit: '',
-      label: 'Phase',
-      isText: true,
-    },
-    ...(daysToRace !== null ? [{
-      value: daysToRace,
-      unit: 'd',
-      label: nextRace.name,
-      highlight: daysToRace <= 42,
-    }] : []),
-  ];
+  const StatBlock = ({ value, unit, label, highlight, large }) => (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{
+        fontSize: large ? '26px' : '20px',
+        fontFamily: 'var(--font-mono)',
+        fontWeight: 300,
+        color: highlight ? '#E8B4BB' : large ? 'var(--white)' : 'rgba(255,255,255,0.75)',
+        lineHeight: 1,
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'center',
+        gap: '2px',
+      }}>
+        {value}
+        {unit && <span style={{ fontSize: large ? '13px' : '11px', color: 'rgba(255,255,255,0.35)', marginLeft: '2px' }}>{unit}</span>}
+      </div>
+      <div style={{
+        fontSize: '10px',
+        color: 'rgba(255,255,255,0.38)',
+        fontFamily: 'var(--font-mono)',
+        marginTop: '4px',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+      }}>
+        {label}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{
@@ -80,7 +72,7 @@ export default function HeaderStats({ activities, plan, races, settings, athlete
       <div>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: '18px',
+          fontSize: '20px',
           letterSpacing: '0.2em',
           color: 'var(--white)',
           textTransform: 'uppercase',
@@ -92,51 +84,51 @@ export default function HeaderStats({ activities, plan, races, settings, athlete
         {athleteName && (
           <div style={{
             fontSize: '11px',
-            color: 'rgba(255,255,255,0.4)',
+            color: 'rgba(255,255,255,0.35)',
             fontFamily: 'var(--font-sans)',
             fontWeight: 300,
             marginTop: '3px',
-            letterSpacing: '0.01em',
           }}>
             Personalized training dashboard for {athleteName}
           </div>
         )}
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'flex', gap: '36px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {stats.map((s, i) => (
-          <div key={i} style={{ textAlign: 'center' }}>
-            <div style={{
-              fontSize: s.isText ? '14px' : '22px',
-              fontFamily: s.isText ? 'var(--font-sans)' : 'var(--font-mono)',
-              fontWeight: 300,
-              color: s.highlight ? '#E8B4BB' : 'var(--white)',
-              lineHeight: 1,
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: '2px',
-              justifyContent: 'center',
-            }}>
-              {s.value}
-              {s.unit && (
-                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginLeft: '2px' }}>
-                  {s.unit}
-                </span>
-              )}
-            </div>
-            <div style={{
-              fontSize: '10px',
-              color: 'rgba(255,255,255,0.4)',
-              fontFamily: 'var(--font-mono)',
-              marginTop: '4px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}>
-              {s.label}
-            </div>
-          </div>
-        ))}
+      {/* Stats — Last Week | THIS WEEK (center, larger) | Planned Next Week | Phase */}
+      <div style={{ display: 'flex', gap: '32px', alignItems: 'center', flexWrap: 'wrap' }}>
+
+        <StatBlock
+          value={Math.round(lastWeekActual * 10) / 10}
+          unit="mi"
+          label="Last Week"
+        />
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '36px', background: 'rgba(255,255,255,0.1)' }} />
+
+        {/* THIS WEEK — center, highlighted */}
+        <StatBlock
+          value={Math.round(thisWeekActual * 10) / 10}
+          unit="mi"
+          label="This Week"
+          highlight
+          large
+        />
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '36px', background: 'rgba(255,255,255,0.1)' }} />
+
+        <StatBlock
+          value={nextWeekPlanned > 0 ? Math.round(nextWeekPlanned * 10) / 10 : '—'}
+          unit={nextWeekPlanned > 0 ? 'mi' : ''}
+          label="Planned Next Wk"
+        />
+
+        <StatBlock
+          value={settings.training_phase || '—'}
+          unit=""
+          label="Phase"
+        />
       </div>
 
       {/* Disconnect */}

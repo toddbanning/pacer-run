@@ -1,5 +1,3 @@
-// lib/strava.js — Strava OAuth + API helpers
-
 const CLIENT_ID = process.env.REACT_APP_STRAVA_CLIENT_ID;
 const CLIENT_SECRET = process.env.REACT_APP_STRAVA_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REACT_APP_STRAVA_REDIRECT_URI;
@@ -16,30 +14,17 @@ export function getAuthUrl() {
   return `https://www.strava.com/oauth/authorize?${params}`;
 }
 
-export function saveTokens(tokens) {
-  localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
-}
-
+export function saveTokens(tokens) { localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens)); }
 export function getTokens() {
-  try {
-    return JSON.parse(localStorage.getItem(TOKEN_KEY));
-  } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(TOKEN_KEY)); } catch { return null; }
 }
-
-export function clearTokens() {
-  localStorage.removeItem(TOKEN_KEY);
-}
+export function clearTokens() { localStorage.removeItem(TOKEN_KEY); }
 
 export async function exchangeCodeForTokens(code) {
   const res = await fetch('https://www.strava.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      code,
-      grant_type: 'authorization_code',
-    }),
+    body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code, grant_type: 'authorization_code' }),
   });
   if (!res.ok) throw new Error('Token exchange failed');
   return res.json();
@@ -49,12 +34,7 @@ export async function refreshAccessToken(refreshToken) {
   const res = await fetch('https://www.strava.com/oauth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
+    body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, refresh_token: refreshToken, grant_type: 'refresh_token' }),
   });
   if (!res.ok) throw new Error('Token refresh failed');
   const data = await res.json();
@@ -66,18 +46,15 @@ export async function getValidAccessToken() {
   let tokens = getTokens();
   if (!tokens) return null;
   const now = Math.floor(Date.now() / 1000);
-  if (tokens.expires_at < now + 60) {
-    tokens = await refreshAccessToken(tokens.refresh_token);
-  }
+  if (tokens.expires_at < now + 60) tokens = await refreshAccessToken(tokens.refresh_token);
   return tokens.access_token;
 }
 
-export async function fetchActivities({ after, before, perPage = 100, page = 1 } = {}) {
+export async function fetchActivities({ after, perPage = 100, page = 1 } = {}) {
   const token = await getValidAccessToken();
   if (!token) throw new Error('Not authenticated');
   const params = new URLSearchParams({ per_page: perPage, page });
   if (after) params.set('after', after);
-  if (before) params.set('before', before);
   const res = await fetch(`https://www.strava.com/api/v3/athlete/activities?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -109,12 +86,34 @@ export async function fetchAthlete() {
   return res.json();
 }
 
-// Convert meters to miles
+// Fetch full gear details including lifetime distance from Strava
+export async function fetchGear(gearId) {
+  const token = await getValidAccessToken();
+  if (!token) throw new Error('Not authenticated');
+  const res = await fetch(`https://www.strava.com/api/v3/gear/${gearId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch gear ${gearId}`);
+  return res.json();
+}
+
+// Fetch all unique gear from activities, return map of id -> full gear object
+export async function fetchAllGear(activities) {
+  const gearIds = [...new Set(activities.map(a => a.gear_id).filter(Boolean))];
+  const results = await Promise.allSettled(gearIds.map(id => fetchGear(id)));
+  const gearMap = {};
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') {
+      gearMap[gearIds[i]] = r.value;
+    }
+  });
+  return gearMap;
+}
+
 export function metersToMiles(m) {
   return Math.round((m / 1609.34) * 100) / 100;
 }
 
-// Convert seconds to mm:ss pace per mile
 export function secondsToPace(seconds, meters) {
   const miles = meters / 1609.34;
   const secsPerMile = seconds / miles;
@@ -123,7 +122,6 @@ export function secondsToPace(seconds, meters) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Format seconds as h:mm:ss
 export function formatDuration(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
