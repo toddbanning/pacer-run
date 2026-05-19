@@ -36,20 +36,31 @@ function ActivityRow({ activity, planEntry, isLast }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: '1fr auto',
+      gridTemplateColumns: 'auto 1fr auto',
       alignItems: 'center',
-      gap: '16px',
-      padding: '9px 0',
+      gap: '14px',
+      padding: '10px 0',
       borderBottom: isLast ? 'none' : '1px solid var(--border-light)',
     }}>
-      {/* Left: everything about the run */}
+
+      {/* LEFT: Date */}
+      <div style={{ flexShrink: 0, minWidth: '72px' }}>
+        <div style={{
+          fontSize: '11px',
+          color: 'var(--text-tertiary)',
+          fontFamily: 'var(--font-mono)',
+          whiteSpace: 'nowrap',
+        }}>
+          {date}
+        </div>
+      </div>
+
+      {/* CENTER: Title + type badge */}
       <div style={{ minWidth: 0 }}>
-        {/* Single line: title + type badge */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          marginBottom: '3px',
         }}>
           <span style={{
             fontSize: '13px',
@@ -74,88 +85,75 @@ function ActivityRow({ activity, planEntry, isLast }) {
             {type}
           </span>
         </div>
-
-        {/* Single line: all metrics inline */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0',
-          flexWrap: 'nowrap',
-        }}>
-          <span style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '12px',
-            color: 'var(--mahogany)',
-            fontWeight: 500,
-            marginRight: '12px',
-          }}>
-            {miles} mi
-          </span>
-          <span style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '12px',
-            color: 'var(--text-secondary)',
-            marginRight: '12px',
-          }}>
-            {pace}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>/mi</span>
-          </span>
-          {activity.average_heartrate && (
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
-              color: 'var(--text-secondary)',
-              marginRight: '12px',
-            }}>
-              {Math.round(activity.average_heartrate)}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}> bpm</span>
-            </span>
-          )}
-          <span style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '12px',
-            color: 'var(--text-tertiary)',
-          }}>
-            {formatDuration(activity.moving_time)}
-          </span>
-          {diff !== null && (
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: diff >= 0 ? '#2D7A4F' : '#B85C00',
-              marginLeft: '10px',
-            }}>
-              {diff >= 0 ? '+' : ''}{diff}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Right: date + shoe */}
-      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '110px' }}>
-        <div style={{
-          fontSize: '11px',
-          color: 'var(--text-tertiary)',
-          fontFamily: 'var(--font-mono)',
-          marginBottom: '4px',
-          whiteSpace: 'nowrap',
-        }}>
-          {date}
-        </div>
+        {/* Shoe on second line under title */}
         {gearName && (
           <div style={{
             fontSize: '10px',
             color: 'var(--navy)',
-            background: 'var(--navy-subtle)',
-            borderRadius: '3px',
-            padding: '2px 6px',
             fontFamily: 'var(--font-mono)',
-            display: 'inline-block',
-            maxWidth: '130px',
+            marginTop: '3px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            opacity: 0.7,
           }}>
             {gearName}
           </div>
+        )}
+      </div>
+
+      {/* RIGHT: All metrics */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+        flexShrink: 0,
+        justifyContent: 'flex-end',
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '12px',
+          color: 'var(--mahogany)',
+          fontWeight: 500,
+          whiteSpace: 'nowrap',
+        }}>
+          {miles} mi
+        </span>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+          whiteSpace: 'nowrap',
+        }}>
+          {pace}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>/mi</span>
+        </span>
+        {activity.average_heartrate && (
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
+            color: 'var(--text-secondary)',
+            whiteSpace: 'nowrap',
+          }}>
+            {Math.round(activity.average_heartrate)}<span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}> bpm</span>
+          </span>
+        )}
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '12px',
+          color: 'var(--text-tertiary)',
+          whiteSpace: 'nowrap',
+        }}>
+          {formatDuration(activity.moving_time)}
+        </span>
+        {diff !== null && (
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            color: diff >= 0 ? '#2D7A4F' : '#B85C00',
+            whiteSpace: 'nowrap',
+          }}>
+            {diff >= 0 ? '+' : ''}{diff}
+          </span>
         )}
       </div>
     </div>

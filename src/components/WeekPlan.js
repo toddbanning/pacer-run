@@ -218,6 +218,74 @@ export default function WeekPlan({ plan, activities }) {
           );
         })}
       </div>
+
+      {/* Upcoming workouts section */}
+      <div style={{
+        marginTop: '16px',
+        paddingTop: '16px',
+        borderTop: '1px solid var(--border-light)',
+      }}>
+        {(() => {
+          const todayStr = format(now, 'yyyy-MM-dd');
+          const todayEntry = plan.find(p => p.date === todayStr);
+          const upcoming = [];
+          for (let i = 1; i <= 3; i++) {
+            const d = addDays(now, i);
+            const dStr = format(d, 'yyyy-MM-dd');
+            const entry = plan.find(p => p.date === dStr);
+            if (entry) upcoming.push({ dateStr: format(d, 'M/d'), entry });
+          }
+          return (
+            <>
+              {todayEntry && (
+                <div style={{ marginBottom: upcoming.length ? '12px' : 0 }}>
+                  <div style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'var(--navy)',
+                    lineHeight: 1.4,
+                  }}>
+                    Today — {todayEntry.plannedMiles > 0 ? todayEntry.plannedMiles + ' mi' : ''}{todayEntry.workoutType !== 'Easy' ? ' · ' + todayEntry.workoutType : ''}
+                    {todayEntry.description ? ' — ' + todayEntry.description : ''}
+                  </div>
+                </div>
+              )}
+              {upcoming.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {upcoming.map((u, i) => (
+                    <div key={i} style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.5,
+                      display: 'flex',
+                      gap: '8px',
+                    }}>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--text-tertiary)',
+                        flexShrink: 0,
+                        minWidth: '36px',
+                        paddingTop: '1px',
+                      }}>
+                        {u.dateStr}
+                      </span>
+                      <span>
+                        {u.entry.plannedMiles > 0 ? u.entry.plannedMiles + ' mi' : ''}
+                        {u.entry.workoutType && u.entry.workoutType !== 'Easy' ? ' · ' + u.entry.workoutType : ''}
+                        {u.entry.description ? ' — ' + u.entry.description : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!todayEntry && upcoming.length === 0 && (
+                <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No upcoming workouts in plan.</p>
+              )}
+            </>
+          );
+        })()}
+      </div>
     </div>
   );
 }
